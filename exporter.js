@@ -180,7 +180,7 @@ app.listen(port, () => {
     console.log(`Server listening on port ${port}`);
     console.log(`Metrics exposed at http://localhost:${port}/metrics`);
     
-    // 서버 시작 시 즉시 1회 실행 후, 1시간마다 주기적으로 실행
+    // 서버 시작 시 즉시 1회 실행 후, 1분마다 주기적으로 실행
     updateMetrics();
-    setInterval(updateMetrics, 3600 * 1000); // 1 hour
+    setInterval(updateMetrics, 60 * 1000); // 60 seconds
 });
