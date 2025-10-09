@@ -1,56 +1,56 @@
 pipeline {
-    agent any
+    agent any // Default agent
 
     environment {
-        // Docker Hub 사용자 이름 또는 Private Registry 주소로 변경하세요.
-        REGISTRY = 'your-docker-hub-username'
+        // 로컬에서 사용할 이미지 이름을 정의합니다.
         IMAGE_NAME = 'inventory-value-exporter'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Jenkins가 SCM(Git 등)에서 코드를 자동으로 체크아웃합니다.
-                echo 'Checking out code...'
+                echo 'Checking out code from Version Control...'
+                checkout scm
+            }
+        }
+
+        stage('Install Dependencies') {
+            agent {
+                docker { image 'node:20-slim' }
+            }
+            steps {
+                echo 'Installing Node.js dependencies...'
+                sh 'npm install'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo "Building Docker image: ${REGISTRY}/${IMAGE_NAME}:${env.BUILD_NUMBER}"
-                // Dockerfile을 사용하여 이미지 빌드
-                sh "docker build -t ${REGISTRY}/${IMAGE_NAME}:${env.BUILD_NUMBER} ."
-            }
-        }
-
-        stage('Push to Registry') {
-            steps {
-                // Jenkins에 등록된 Docker Registry 인증 정보의 ID로 변경하세요.
-                withCredentials([usernamePassword(credentialsId: 'docker-registry-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    echo 'Logging in and pushing image...'
-                    sh "docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}"
-                    sh "docker push ${REGISTRY}/${IMAGE_NAME}:${env.BUILD_NUMBER}"
-                    sh "docker logout"
+                script {
+                    // BUILD_NUMBER는 Jenkins에서 제공하는 환경 변수입니다.
+                    def dockerImage = "${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    echo "Building Docker image: ${dockerImage}"
+                    
+                    // Dockerfile을 사용하여 이미지 빌드
+                    sh "docker build -t ${dockerImage} ."
                 }
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy (Local)') {
             steps {
-                echo 'This is a placeholder for the deployment stage.'
-                // 예시: SSH를 통해 원격 서버에 접속하여 컨테이너를 실행하는 스크립트
-                /*
-                sshagent(['your-remote-server-ssh-credentials']) {
-                   sh '''
-                     ssh user@your-remote-server.com "
-                       docker pull ${REGISTRY}/${IMAGE_NAME}:${env.BUILD_NUMBER} && \
-                       docker stop ${IMAGE_NAME} || true && \
-                       docker rm ${IMAGE_NAME} || true && \
-                       docker run -d --name ${IMAGE_NAME} -p 9101:9101 ${REGISTRY}/${IMAGE_NAME}:${env.BUILD_NUMBER}
-                     "
-                   '''
+                script {
+                    def dockerImage = "${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    echo "Deploying image ${dockerImage} on the Jenkins agent..."
+
+                    // Jenkins 에이전트에서 기존 컨테이너를 중지하고 새 버전으로 실행합니다.
+                    // 이 단계는 Jenkins 에이전트가 Docker를 실행할 수 있어야 합니다.
+                    sh '''
+                        docker stop ${IMAGE_NAME} || true
+                        docker rm ${IMAGE_NAME} || true
+                        docker run -d --restart always --name ${IMAGE_NAME} -p 9101:9101 ${dockerImage}
+                    '''
                 }
-                */
             }
         }
     }
@@ -58,6 +58,13 @@ pipeline {
     post {
         always {
             echo 'Pipeline finished.'
+            cleanWs()
+        }
+        success {
+            echo 'Pipeline executed successfully.'
+        }
+        failure {
+            echo 'Pipeline failed.'
         }
     }
 }
