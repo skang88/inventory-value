@@ -45,12 +45,11 @@ pipeline {
 
                     // Jenkins 에이전트에서 기존 컨테이너를 중지하고 새 버전으로 실행합니다.
                     // 이 단계는 Jenkins 에이전트가 Docker를 실행할 수 있어야 합니다.
-                    sh '''
-                        docker stop ${IMAGE_NAME} || true
-                        docker rm ${IMAGE_NAME} || true
-                        docker run -d --restart always --name ${IMAGE_NAME} -p 9101:9101 ${dockerImage}
-                    '''
-                }
+                                sh """
+                                    docker stop ${IMAGE_NAME} || true
+                                    docker rm ${IMAGE_NAME} || true
+                                    docker run -d --restart always --name ${IMAGE_NAME} -p 8001:9101 ${dockerImage}
+                                """                }
             }
         }
     }
