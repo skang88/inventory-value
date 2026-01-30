@@ -54,7 +54,7 @@ WITH Quantities AS (
     -- Standby
     SELECT ITMNO, 'Standby' AS Location, SUM(JQTY) AS Qty
     FROM SAG.dbo.MAT_ITMBLPFSUB
-    WHERE WARHS IN ('F01', 'R01', 'C01', 'F31') AND JQTY > 0
+    WHERE WARHS IN ('F01', 'R01', 'C01', 'F31', 'C75') AND JQTY > 0
     GROUP BY ITMNO
     UNION ALL
     -- Rack
@@ -72,7 +72,7 @@ WITH Quantities AS (
     -- Lotin
     SELECT ITMNO, 'Lotin' AS Location, SUM(J_QTY) AS Qty
     FROM SAG.dbo.PRD_LOTIN
-    WHERE LINE IN ('F01', 'R01', 'C01', 'F31') AND J_QTY > 0
+    WHERE LINE IN ('F01', 'R01', 'C01', 'F31', 'C75') AND J_QTY > 0
     GROUP BY ITMNO
 )
 SELECT
